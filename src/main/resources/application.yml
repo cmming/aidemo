@@ -1,0 +1,29 @@
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: default
+      packages-to-scan: com.example
+      paths-to-match: /**
+  swagger-ui:
+    operations-sorter: alpha
+    path: /swagger-ui.html
+    tags-sorter: alpha
+
+spring:
+  ai:
+    ollama:
+      chat:
+        model: qwen3:8b
+  application:
+    name: aidemo
+
+
+
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration

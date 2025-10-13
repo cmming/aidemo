@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama 大模型聊天界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            text-align: right;
+        }
+
+        .ai-message {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .ai-message .message-content {
+            background: white;
+            border: 1px solid #e0e0e0;
+            color: #333;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .model-select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #userInput:focus {
+            border-color: #667eea;
+        }
+
+        #sendBtn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+
+        #sendBtn:hover {
+            transform: translateY(-2px);
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 18px;
+            color: #666;
+            max-width: 70%;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d63031;
+            border: 1px solid #fab1a0;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🤖 Ollama 大模型聊天</h1>
+        <p>与本地部署的大语言模型进行对话</p>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="message ai-message">
+            <div class="message-content">
+                你好！我是部署在本地的大语言模型，有什么可以帮助你的吗？
+            </div>
+            <div class="timestamp">2025-08-08 08:03:48</div>
+        </div>
+    </div>
+
+    <div class="input-container">
+        <div class="input-row">
+            <select class="model-select" id="modelSelect">
+                <option value="llama2">Llama 2</option>
+                <option value="codellama">Code Llama</option>
+                <option value="mistral">Mistral</option>
+                <option value="qwen2">Qwen 2</option>
+                <option value="gemma">Gemma</option>
+            </select>
+            <div class="input-group">
+                <input type="text" id="userInput" placeholder="输入你的问题..."
+                       onkeypress="handleKeyPress(event)">
+                <button id="sendBtn" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="statusText">就绪</span> |
+        <span>服务器: localhost:11434</span> |
+        <span id="modelStatus">当前模型: llama2</span>
+    </div>
+</div>
+
+<script>
+    const chatContainer = document.getElementById('chatContainer');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const modelSelect = document.getElementById('modelSelect');
+    const statusText = document.getElementById('statusText');
+    const modelStatus = document.getElementById('modelStatus');
+
+    // 更新模型状态
+    modelSelect.addEventListener('change', function() {
+        modelStatus.textContent = `当前模型: ${this.value}`;
+    });
+
+    // 处理回车键
+    function handleKeyPress(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+
+    // 添加消息到聊天容器
+    function addMessage(content, isUser = false, isError = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = `message-content ${isError ? 'error-message' : ''}`;
+        contentDiv.textContent = content;
+
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'timestamp';
+        timestampDiv.textContent = new Date().toLocaleString('zh-CN');
+
+        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(timestampDiv);
+        chatContainer.appendChild(messageDiv);
+
+        // 滚动到底部
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // 显示加载状态
+    function showLoading() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'message ai-message';
+        loadingDiv.id = 'loadingMessage';
+
+        loadingDiv.innerHTML = `
+                <div class="loading">
+                    <span>正在思考</span>
+                    <div class="loading-dots">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+            `;
+
+        chatContainer.appendChild(loadingDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // 移除加载状态
+    function hideLoading() {
+        const loadingMessage = document.getElementById('loadingMessage');
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+    }
+
+    // 发送消息
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        const selectedModel = modelSelect.value;
+
+        // 添加用户消息
+        addMessage(message, true);
+        userInput.value = '';
+
+        // 禁用发送按钮
+        sendBtn.disabled = true;
+        statusText.textContent = '发送中...';
+
+        // 显示加载状态
+        showLoading();
+
+        try {
+            // 调用 Ollama API
+            const response = await fetch('http://localhost:11434/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: selectedModel,
+                    prompt: message,
+                    stream: false
+                })
+            });
+
+            hideLoading();
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // 添加AI回复
+            if (data.response) {
+                addMessage(data.response);
+                statusText.textContent = '就绪';
+            } else {
+                addMessage('抱歉，我没有收到有效的响应。', false, true);
+                statusText.textContent = '响应异常';
+            }
+
+        } catch (error) {
+            hideLoading();
+            console.error('Error:', error);
+
+            let errorMessage = '连接失败，请检查：\n';
+            errorMessage += '1. Ollama 服务是否已启动 (ollama serve)\n';
+            errorMessage += '2. 模型是否已下载 (ollama pull ' + selectedModel + ')\n';
+            errorMessage += '3. 服务地址是否正确 (localhost:11434)';
+
+            addMessage(errorMessage, false, true);
+            statusText.textContent = '连接失败';
+        }
+
+        // 重新启用发送按钮
+        sendBtn.disabled = false;
+        userInput.focus();
+    }
+
+    // 页面加载时检查连接
+    window.addEventListener('load', async function() {
+        try {
+            const response = await fetch('http://localhost:11434/api/tags');
+            if (response.ok) {
+                const data = await response.json();
+                statusText.textContent = `已连接 - 可用模型: ${data.models?.length || 0} 个`;
+
+                // 更新模型选择器
+                if (data.models && data.models.length > 0) {
+                    modelSelect.innerHTML = '';
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = model.name;
+                        modelSelect.appendChild(option);
+                    });
+                    modelStatus.textContent = `当前模型: ${data.models[0].name}`;
+                }
+            }
+        } catch (error) {
+            statusText.textContent = 'Ollama 服务未连接';
+            console.log('Ollama service not available:', error);
+        }
+    });
+</script>
+</body>
+</html>
