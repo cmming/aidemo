@@ -157,7 +157,7 @@ public class MCPChatController {
             return ResponseEntity.ok("用户 " + userId + " 的聊天记忆已清理");
         } catch (Exception e) {
             log.error("Failed to clear memory for user: " + userId, e);
-            return ResponseEntity.internalServerError().body("清理聊天记忆失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("清理聊天记忆失败，请稍后重试");
         }
     }
 
