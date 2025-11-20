@@ -13,4 +13,9 @@ public class HtmlController {
         return "chat";  // 返回 templates/chat.html
     }
 
+    @GetMapping("/mcp-demo")
+    public String mcpDemo() {
+        return "mcp-demo";  // 返回 templates/mcp-demo.html
+    }
+
 }
