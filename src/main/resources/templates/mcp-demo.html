@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .output-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 100px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+        
+        .info {
+            color: #17a2b8;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-connected {
+            background: #28a745;
+        }
+        
+        .status-disconnected {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 MCP Server Demo</h1>
+        <p class="subtitle">Model Context Protocol Server - Spring Boot Implementation</p>
+        
+        <!-- Server Info Section -->
+        <div class="section">
+            <h2 class="section-title">📊 Server Information</h2>
+            <div class="button-group">
+                <button onclick="getServerInfo()">Get Server Info</button>
+                <button onclick="checkHealth()">Health Check</button>
+                <button onclick="initialize()">Initialize Protocol</button>
+            </div>
+            <div id="serverInfo" class="output-box"></div>
+        </div>
+        
+        <!-- Tools Section -->
+        <div class="section">
+            <h2 class="section-title">🛠️ Tools</h2>
+            <div class="button-group">
+                <button onclick="listTools()">List Tools</button>
+            </div>
+            
+            <h3 style="margin-top: 20px;">Calculator Tool</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                <div class="input-group">
+                    <label>Operation:</label>
+                    <select id="operation">
+                        <option value="add">Add (+)</option>
+                        <option value="subtract">Subtract (-)</option>
+                        <option value="multiply">Multiply (×)</option>
+                        <option value="divide">Divide (÷)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Number A:</label>
+                    <input type="number" id="numA" value="10">
+                </div>
+                <div class="input-group">
+                    <label>Number B:</label>
+                    <input type="number" id="numB" value="5">
+                </div>
+            </div>
+            <button onclick="callCalculator()" style="width: 100%;">Calculate</button>
+            
+            <h3 style="margin-top: 20px;">Get Current Time</h3>
+            <div class="input-group">
+                <label>Timezone:</label>
+                <input type="text" id="timezone" value="UTC" placeholder="e.g., UTC, Asia/Shanghai">
+            </div>
+            <button onclick="getCurrentTime()" style="width: 100%;">Get Time</button>
+            
+            <div id="toolsOutput" class="output-box" style="margin-top: 15px;"></div>
+        </div>
+        
+        <!-- Resources Section -->
+        <div class="section">
+            <h2 class="section-title">📚 Resources</h2>
+            <div class="button-group">
+                <button onclick="listResources()">List Resources</button>
+                <button onclick="readResource()">Read Example Resource</button>
+            </div>
+            <div id="resourcesOutput" class="output-box"></div>
+        </div>
+        
+        <!-- Prompts Section -->
+        <div class="section">
+            <h2 class="section-title">💬 Prompts</h2>
+            <div class="button-group">
+                <button onclick="listPrompts()">List Prompts</button>
+            </div>
+            
+            <h3 style="margin-top: 20px;">Code Review Prompt</h3>
+            <div class="input-group">
+                <label>Code:</label>
+                <input type="text" id="code" value="function add(a, b) { return a + b; }">
+            </div>
+            <div class="input-group">
+                <label>Language:</label>
+                <input type="text" id="language" value="javascript">
+            </div>
+            <button onclick="getCodeReviewPrompt()" style="width: 100%;">Get Prompt</button>
+            
+            <div id="promptsOutput" class="output-box" style="margin-top: 15px;"></div>
+        </div>
+        
+        <!-- WebSocket Section -->
+        <div class="section">
+            <h2 class="section-title">🔌 WebSocket Connection</h2>
+            <div style="margin-bottom: 15px;">
+                <span class="status-indicator" id="wsStatus"></span>
+                <span id="wsStatusText">Disconnected</span>
+            </div>
+            <div class="button-group">
+                <button onclick="connectWebSocket()">Connect WebSocket</button>
+                <button onclick="disconnectWebSocket()">Disconnect</button>
+                <button onclick="sendWSMessage()">Send Test Message</button>
+            </div>
+            <div id="wsOutput" class="output-box"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/mcp';
+        let ws = null;
+        let messageId = 1;
+        
+        // Update WebSocket status
+        function updateWSStatus(connected) {
+            const indicator = document.getElementById('wsStatus');
+            const text = document.getElementById('wsStatusText');
+            if (connected) {
+                indicator.className = 'status-indicator status-connected';
+                text.textContent = 'Connected';
+            } else {
+                indicator.className = 'status-indicator status-disconnected';
+                text.textContent = 'Disconnected';
+            }
+        }
+        
+        // Initialize status
+        updateWSStatus(false);
+        
+        // Helper function to make JSON-RPC requests
+        async function makeRPCRequest(method, params = {}) {
+            const request = {
+                jsonrpc: '2.0',
+                method: method,
+                params: params,
+                id: messageId++
+            };
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(request)
+                });
+                return await response.json();
+            } catch (error) {
+                return {error: {code: -1, message: error.message}};
+            }
+        }
+        
+        // Display output
+        function displayOutput(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            const className = isError ? 'error' : 'success';
+            element.innerHTML = `<span class="${className}">${JSON.stringify(data, null, 2)}</span>`;
+        }
+        
+        // Server Info
+        async function getServerInfo() {
+            const response = await fetch(API_BASE + '/info');
+            const data = await response.json();
+            displayOutput('serverInfo', data);
+        }
+        
+        async function checkHealth() {
+            const response = await fetch(API_BASE + '/health');
+            const data = await response.json();
+            displayOutput('serverInfo', data);
+        }
+        
+        async function initialize() {
+            const response = await makeRPCRequest('initialize', {
+                protocolVersion: '2024-11-05',
+                capabilities: {}
+            });
+            displayOutput('serverInfo', response, !!response.error);
+        }
+        
+        // Tools
+        async function listTools() {
+            const response = await makeRPCRequest('tools/list');
+            displayOutput('toolsOutput', response, !!response.error);
+        }
+        
+        async function callCalculator() {
+            const operation = document.getElementById('operation').value;
+            const a = parseFloat(document.getElementById('numA').value);
+            const b = parseFloat(document.getElementById('numB').value);
+            
+            const response = await makeRPCRequest('tools/call', {
+                name: 'calculator',
+                arguments: {operation, a, b}
+            });
+            displayOutput('toolsOutput', response, !!response.error);
+        }
+        
+        async function getCurrentTime() {
+            const timezone = document.getElementById('timezone').value;
+            const response = await makeRPCRequest('tools/call', {
+                name: 'get_current_time',
+                arguments: {timezone}
+            });
+            displayOutput('toolsOutput', response, !!response.error);
+        }
+        
+        // Resources
+        async function listResources() {
+            const response = await makeRPCRequest('resources/list');
+            displayOutput('resourcesOutput', response, !!response.error);
+        }
+        
+        async function readResource() {
+            const response = await makeRPCRequest('resources/read', {
+                uri: 'resource://example/data'
+            });
+            displayOutput('resourcesOutput', response, !!response.error);
+        }
+        
+        // Prompts
+        async function listPrompts() {
+            const response = await makeRPCRequest('prompts/list');
+            displayOutput('promptsOutput', response, !!response.error);
+        }
+        
+        async function getCodeReviewPrompt() {
+            const code = document.getElementById('code').value;
+            const language = document.getElementById('language').value;
+            
+            const response = await makeRPCRequest('prompts/get', {
+                name: 'code_review',
+                arguments: {code, language}
+            });
+            displayOutput('promptsOutput', response, !!response.error);
+        }
+        
+        // WebSocket
+        function connectWebSocket() {
+            const wsUrl = `ws://${window.location.host}/mcp/ws`;
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                updateWSStatus(true);
+                displayOutput('wsOutput', {status: 'Connected to WebSocket'});
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                const current = document.getElementById('wsOutput').innerHTML;
+                displayOutput('wsOutput', {
+                    received: message,
+                    timestamp: new Date().toISOString()
+                });
+            };
+            
+            ws.onerror = (error) => {
+                displayOutput('wsOutput', {error: 'WebSocket error occurred'}, true);
+            };
+            
+            ws.onclose = () => {
+                updateWSStatus(false);
+                displayOutput('wsOutput', {status: 'WebSocket connection closed'});
+            };
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function sendWSMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                displayOutput('wsOutput', {error: 'WebSocket not connected'}, true);
+                return;
+            }
+            
+            const request = {
+                jsonrpc: '2.0',
+                method: 'tools/list',
+                id: messageId++
+            };
+            
+            ws.send(JSON.stringify(request));
+            displayOutput('wsOutput', {sent: request});
+        }
+    </script>
+</body>
+</html>
