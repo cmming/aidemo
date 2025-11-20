@@ -310,4 +310,26 @@ public class MCPService {
             default -> "Prompt: " + promptName;
         };
     }
+
+    /**
+     * Get all registered tools
+     * This is used by the adapter to expose tools to the LLM
+     */
+    public Map<String, MCPTool> getTools() {
+        return new HashMap<>(tools);
+    }
+
+    /**
+     * Get all registered resources
+     */
+    public Map<String, MCPResource> getResources() {
+        return new HashMap<>(resources);
+    }
+
+    /**
+     * Get all registered prompts
+     */
+    public Map<String, MCPPrompt> getPrompts() {
+        return new HashMap<>(prompts);
+    }
 }
